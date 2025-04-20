@@ -221,13 +221,6 @@ def main():
             "Analyze Python code to generate function-level and overall codebase summaries. "
             "Upload a `.py` file and choose a perspective for the summary."
         )
-        st.markdown("### Settings")
-        theme = st.selectbox("Theme", ["Dark", "Light"], index=0, help="Switch between light and dark themes.")
-        if theme == "Dark":
-            st.markdown(
-                "<style>body {background-color: #2c3e50; color: #ffffff;}</style>",
-                unsafe_allow_html=True
-            )
 
     # Main content
     with st.container():
