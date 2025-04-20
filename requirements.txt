@@ -1,0 +1,6 @@
+transformers
+torch
+groq
+python-dotenv
+streamlit
+nest_asyncio
