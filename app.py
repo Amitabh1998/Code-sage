@@ -222,8 +222,10 @@ def main():
             "Upload a `.py` file and choose a perspective for the summary."
         )
 
+    extracted_summary_for_functions = False
     # Main content
     with st.container():
+        print("log")
         st.markdown('<div class="main">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Codebase Summarizer</div>', unsafe_allow_html=True)
         st.markdown(
@@ -295,34 +297,36 @@ def main():
                 if os.path.exists(temp_file_path):
                     os.remove(temp_file_path)
                 return
+            print(extracted_summary_for_functions)
+            if not extracted_summary_for_functions:
+                # Function summaries
+                st.markdown('<div class="section-title">Function Summaries</div>', unsafe_allow_html=True)
+                extracted_summaries = []
+                for func in functions:
+                    with st.expander(f"Function: {func['name']} (Line {func['line_start']})", expanded=False):
+                        summary = summarizer.summarize_function(func['code'])
+                        print("Printing summary")
+                        extracted_summaries.append(summary)
+                        st.markdown('<div class="card">', unsafe_allow_html=True)
+                        st.code(func['code'], language="python")
+                        st.markdown("**Summary:**")
+                        st.markdown(f'<div class="summary-text">{summary}</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        logger.info(f"Generated summary for function {func['name']}: {summary}")
 
-            # Function summaries
-            st.markdown('<div class="section-title">Function Summaries</div>', unsafe_allow_html=True)
-            extracted_summaries = []
-            for func in functions:
-                with st.expander(f"Function: {func['name']} (Line {func['line_start']})", expanded=False):
-                    summary = summarizer.summarize_function(func['code'])
-                    extracted_summaries.append(summary)
-                    st.markdown('<div class="card">', unsafe_allow_html=True)
-                    st.code(func['code'], language="python")
-                    st.markdown("**Summary:**")
-                    st.markdown(f'<div class="summary-text">{summary}</div>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    logger.info(f"Generated summary for function {func['name']}: {summary}")
-
-            # Download function summaries
-            if extracted_summaries:
-                summary_text = "\n\n".join(
-                    f"Function: {func['name']} (Line {func['line_start']})\nSummary: {summary}"
-                    for func, summary in zip(functions, extracted_summaries)
-                )
-                st.download_button(
-                    label="Download Function Summaries",
-                    data=summary_text,
-                    file_name=f"function_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                    mime="text/plain",
-                    help="Download a text file containing all function summaries."
-                )
+                # Download function summaries
+                if extracted_summaries:
+                    summary_text = "\n\n".join(
+                        f"Function: {func['name']} (Line {func['line_start']})\nSummary: {summary}"
+                        for func, summary in zip(functions, extracted_summaries)
+                    )
+                    st.download_button(
+                        label="Download Function Summaries",
+                        data=summary_text,
+                        file_name=f"function_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                        mime="text/plain",
+                        help="Download a text file containing all function summaries."
+                    )
 
             # Overall summary
             st.markdown('<div class="section-title">Overall Codebase Summary</div>', unsafe_allow_html=True)
@@ -337,7 +341,8 @@ def main():
                 )
             with col2:
                 generate_button = st.button("Generate Summary", key="generate_summary")
-
+                extracted_summary_for_functions = True
+            
             if generate_button:
                 with st.spinner("Generating overall summary..."):
                     try:
