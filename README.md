@@ -1,8 +1,20 @@
-# Codebase Summarizer
+# CodeSage
 
-A powerful tool that analyzes Python code to generate function-level and overall codebase summaries using AI models. This application helps developers, product managers, and project managers quickly understand code functionality without reading through every line.
+In the era of AI-powered development, tools like GitHub Copilot have revolutionized how we write code. However, they come with a significant tradeoff—your code is sent to remote servers for processing. This raises serious concerns for organizations handling proprietary, confidential, or sensitive codebases. Every keystroke or file passed through such tools could potentially be logged, analyzed, or stored on external infrastructure beyond your control.
 
-![Codebase Summarizer](https://via.placeholder.com/800x400?text=Codebase+Summarizer)
+CodeSage is built with a different philosophy—your code stays yours.
+
+Instead of streaming raw source code to external LLMs, CodeSage performs local, on-device summarization using specialized models like T5, running entirely in your environment. Only the sanitized, abstracted summaries—devoid of implementation details—are sent to an external LLM (via Groq) for generating higher-level overviews. This dual-layered architecture enables:
+
+🔐 Maximum code privacy
+
+⚙️ Custom control over summarization models
+
+🧠 Rich, role-specific insights (PM, Dev, Manager)
+
+With CodeSage, you get the benefits of modern AI-powered code understanding without compromising your intellectual property.
+
+![Codebase Summarizer] (CodeSage.png)
 
 ## 🌟 Features
 

@@ -86,20 +86,21 @@ st.markdown(
 )
 
 def main():
+    # Sidebar content
     with st.sidebar:
-        st.image("machine-learning-4-robot-developer-working-programming-coding-ai-machine-learning-script-1024.webp", caption="Codebase Summarizer", use_container_width=True)
+        st.image(
+            "CodeSage.png",
+            caption="CodeSage: Summarize your codebase!",
+            use_container_width=True
+        )
         st.markdown("## 👋 Welcome")
         st.write("Upload a Python `.py` file to generate function-level and codebase summaries.")
         st.write("Choose a perspective (Product Manager, Developer, or Manager).")
 
+    # Main section title
     st.markdown('<div class="section-title">📄 Upload Python File</div>', unsafe_allow_html=True)
 
-    try:
-        Config.validate()
-    except Exception as e:
-        st.markdown(f'<div class="error-box">⚠️ {e}</div>', unsafe_allow_html=True)
-        return
-
+    # Initialize the summarizer
     try:
         summarizer = Summarizer(
             function_model_name=Config.FUNCTION_SUMMARIZER_MODEL,
@@ -107,34 +108,52 @@ def main():
             groq_model=Config.GROQ_MODEL
         )
     except Exception as e:
-        st.markdown(f'<div class="error-box">⚠️ {e}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="error-box">⚠️ Failed to initialize summarizer: {e}</div>', unsafe_allow_html=True)
         return
 
-    uploaded_file = st.file_uploader("",type=["py"])
-    if uploaded_file:
-        temp_path = "temp.py"
+    # File uploader
+    uploaded_file = st.file_uploader("Upload a Python file", type=["py"])
+    if not uploaded_file:
+        st.info("Please upload a Python file to proceed.")
+        return
+
+    # Save the uploaded file temporarily
+    temp_path = "temp.py"
+    try:
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.read())
         st.markdown('<div class="success-box">✅ File uploaded successfully!</div>', unsafe_allow_html=True)
 
-        functions = extract_functions(temp_path)
-        if not functions:
-            st.markdown('<div class="error-box">⚠️ No functions found in the file.</div>', unsafe_allow_html=True)
+        # Validate the uploaded file
+        try:
+            Config.validate(api_key=Config.GROQ_API_KEY, file_path=temp_path)
+        except Exception as e:
+            st.markdown(f'<div class="error-box">⚠️ Validation error: {e}</div>', unsafe_allow_html=True)
             return
 
-        extracted_summaries = []
+        # Extract functions from the file
+        functions = extract_functions(temp_path)
+        if not functions:
+            st.markdown('<div class="error-box">⚠️ No functions found in the uploaded file.</div>', unsafe_allow_html=True)
+            return
 
+        # Display function summaries
+        extracted_summaries = []
         st.markdown('<div class="section-title">🧠 Function Summaries</div>', unsafe_allow_html=True)
         for func in functions:
             with st.expander(f"{func['name']} (Line {func['line_start']})"):
-                summary = summarizer.summarize_function(func['code'])
-                extracted_summaries.append(summary)
-                st.markdown('<div class="card">', unsafe_allow_html=True)
-                st.code(func['code'], language='python')
-                st.markdown("**Summary:**")
-                st.markdown(f'<div class="summary-text">{summary}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                try:
+                    summary = summarizer.summarize_function(func['code'])
+                    extracted_summaries.append(summary)
+                    st.markdown('<div class="card">', unsafe_allow_html=True)
+                    st.code(func['code'], language='python')
+                    st.markdown("**Summary:**")
+                    st.markdown(f'<div class="summary-text">{summary}</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                except Exception as e:
+                    st.markdown(f'<div class="error-box">⚠️ Error summarizing function: {e}</div>', unsafe_allow_html=True)
 
+        # Download function summaries
         if extracted_summaries:
             summary_text = "\n\n".join(
                 f"Function: {func['name']} (Line {func['line_start']})\nSummary: {summary}"
@@ -147,9 +166,8 @@ def main():
                 mime="text/plain"
             )
 
+        # Overall codebase summary
         st.markdown('<div class="section-title">🧾 Overall Codebase Summary</div>', unsafe_allow_html=True)
-
-        # Two columns: dropdown on left, button on right
         col1, col2 = st.columns([3, 1])
 
         with col1:
@@ -160,33 +178,31 @@ def main():
             )
 
         with col2:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)  # vertical align trick
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)  # Vertical alignment trick
             generate = st.button("Generate Summary", key="generate_summary")
 
-        # Trigger summary generation
         if generate:
             with st.spinner("Generating summary..."):
                 try:
-                    summary = summarizer.summarize_codebase(extracted_summaries, user_type)
-
+                    overall_summary = summarizer.summarize_codebase(extracted_summaries, user_type)
                     st.markdown('<div class="card">', unsafe_allow_html=True)
                     st.markdown("**Overall Summary:**")
-                    st.markdown(f'<div class="summary-text">{summary}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="summary-text">{overall_summary}</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
 
-                    # Download button
+                    # Download overall summary
                     st.download_button(
                         label="⬇️ Download Overall Summary",
-                        data=summary,
+                        data=overall_summary,
                         file_name=f"overall_summary_{user_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                         mime="text/plain",
                         help="Download the overall summary as a .txt file"
                     )
-
                 except Exception as e:
-                    st.markdown(f'<div class="error-box">⚠️ {e}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="error-box">⚠️ Error generating overall summary: {e}</div>', unsafe_allow_html=True)
 
-        # Final cleanup
+    finally:
+        # Cleanup temporary file
         if os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
